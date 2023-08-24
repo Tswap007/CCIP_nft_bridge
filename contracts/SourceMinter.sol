@@ -6,11 +6,6 @@ import {IRouterClient} from "@chainlink/contracts-ccip/src/v0.8/ccip/interfaces/
 import {Client} from "@chainlink/contracts-ccip/src/v0.8/ccip/libraries/Client.sol";
 import {Withdraw} from "./utils/Withdraw.sol";
 
-/**
- * THIS IS AN EXAMPLE CONTRACT THAT USES HARDCODED VALUES FOR CLARITY.
- * THIS IS AN EXAMPLE CONTRACT THAT USES UN-AUDITED CODE.
- * DO NOT USE THIS CODE IN PRODUCTION.
- */
 contract SourceMinter is Withdraw {
     enum PayFeesIn {
         Native,
@@ -30,14 +25,23 @@ contract SourceMinter is Withdraw {
 
     receive() external payable {}
 
+    //changing the call data here to send the function Abi to the contract
     function mint(
         uint64 destinationChainSelector,
-        address receiver,
+        address receiver, // reciever is the destination contract on the other chain
+        string memory metaDataUri, //here
+        string memory imageUri, //here
+        address eoaAddress;// address of caller from the nft contract
         PayFeesIn payFeesIn
     ) external {
         Client.EVM2AnyMessage memory message = Client.EVM2AnyMessage({
             receiver: abi.encode(receiver),
-            data: abi.encodeWithSignature("mint(address)", msg.sender),
+            data: abi.encodeWithSignature(
+                "safeMint(address,string,string)",
+                eoaAddress,
+                metaDataUri,
+                imageUri
+            ),
             tokenAmounts: new Client.EVMTokenAmount[](0),
             extraArgs: "",
             feeToken: payFeesIn == PayFeesIn.LINK ? i_link : address(0)
@@ -51,7 +55,7 @@ contract SourceMinter is Withdraw {
         bytes32 messageId;
 
         if (payFeesIn == PayFeesIn.LINK) {
-            // LinkTokenInterface(i_link).approve(i_router, fee);
+            LinkTokenInterface(i_link).approve(i_router, fee);
             messageId = IRouterClient(i_router).ccipSend(
                 destinationChainSelector,
                 message

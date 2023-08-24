@@ -6,11 +6,14 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
+import {SourceMinter} from "./SourceMinter.sol";
 
 contract WonderlandWanderers is ERC721, ERC721URIStorage, Ownable {
     using Counters for Counters.Counter;
 
     Counters.Counter private _tokenIdCounter;
+
+    SourceMinter srcmint;
 
     // Mapping to store custom URIs for each token
     mapping(uint256 => string) private _tokenIdToMetadataURI;
@@ -19,7 +22,9 @@ contract WonderlandWanderers is ERC721, ERC721URIStorage, Ownable {
     // Mapping to store id to coresponding ImageUri
     mapping(uint256 => string) private _tokenIdToImageUri;
 
-    constructor() ERC721("Wonderland Wanderers", "WW") {}
+    constructor(address _srcmint) ERC721("Wonderland Wanderers", "WW") {
+        srcmint = SourceMinter(_srcmint);
+    }
 
     function safeMint(
         address to,
@@ -65,6 +70,23 @@ contract WonderlandWanderers is ERC721, ERC721URIStorage, Ownable {
         delete _imageUriExist[imageUri];
         delete _tokenIdToImageUri[tokenId];
         super._burn(tokenId);
+    }
+
+    // Function to call the mint function of SourceMinter
+    function _bridge(
+        uint64 destinationChainSelector,
+        address receiver,
+        uint256 tokenId,
+        SourceMinter.PayFeesIn payFeesIn // Import the enum type from SourceMinter
+    ) internal {
+        address eoaAddress = msg.sender;
+        _burn(tokenId);
+        // Call the mint function on the SourceMinter instance
+        sourceMinterInstance.mint(
+            destinationChainSelector,
+            receiver,
+            payFeesIn
+        );
     }
 
     function supportsInterface(
