@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import {SourceMinter} from "./SourceMinter.sol";
 
+//deploy this and the other contracts to test the functionality and then also first I need to fix the package not being installed for CCIP
 contract WonderlandWanderers is ERC721, ERC721URIStorage, Ownable {
     using Counters for Counters.Counter;
 
@@ -22,7 +23,7 @@ contract WonderlandWanderers is ERC721, ERC721URIStorage, Ownable {
     // Mapping to store id to coresponding ImageUri
     mapping(uint256 => string) private _tokenIdToImageUri;
 
-    constructor(address _srcmint) ERC721("Wonderland Wanderers", "WW") {
+    constructor(address payable _srcmint) ERC721("Wonderland Wanderers", "WW") {
         srcmint = SourceMinter(_srcmint);
     }
 
@@ -78,15 +79,21 @@ contract WonderlandWanderers is ERC721, ERC721URIStorage, Ownable {
         address receiver,
         uint256 tokenId,
         SourceMinter.PayFeesIn payFeesIn // Import the enum type from SourceMinter
-    ) internal {
+    ) external payable {
         address eoaAddress = msg.sender;
-        _burn(tokenId);
+        string memory metaDataUri = _tokenIdToMetadataURI[tokenId];
+        string memory imageUri = _tokenIdToImageUri[tokenId];
         // Call the mint function on the SourceMinter instance
-        sourceMinterInstance.mint(
+        srcmint.mint(
             destinationChainSelector,
             receiver,
+            metaDataUri,
+            imageUri,
+            eoaAddress,
             payFeesIn
         );
+        //then burn token thinking of making this function call after the message has been successfully sent to the router
+        _burn(tokenId);
     }
 
     function supportsInterface(

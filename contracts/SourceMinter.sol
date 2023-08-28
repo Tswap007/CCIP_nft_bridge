@@ -31,7 +31,7 @@ contract SourceMinter is Withdraw {
         address receiver, // reciever is the destination contract on the other chain
         string memory metaDataUri, //here
         string memory imageUri, //here
-        address eoaAddress;// address of caller from the nft contract
+        address eoaAddress, // address of caller from the nft contract
         PayFeesIn payFeesIn
     ) external {
         Client.EVM2AnyMessage memory message = Client.EVM2AnyMessage({
